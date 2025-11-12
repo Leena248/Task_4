@@ -22,19 +22,16 @@ describe('AllPerks page (Directory)', () => {
     );
 
     // Wait for the baseline card to appear which guarantees the asynchronous
-    // fetch finished.
-    await waitFor(() => {
-      expect(screen.getByText(seededPerk.title)).toBeInTheDocument();
-    });
+    // fetch finished. Use findByText which awaits the element appearing.
+    await screen.findByText(seededPerk.title);
 
     // Interact with the name filter input using the real value that
     // corresponds to the seeded record.
     const nameFilter = screen.getByPlaceholderText('Enter perk name...');
     fireEvent.change(nameFilter, { target: { value: seededPerk.title } });
 
-    await waitFor(() => {
-      expect(screen.getByText(seededPerk.title)).toBeInTheDocument();
-    });
+    // After typing, the UI will auto-search (debounced). Wait for the result.
+    await screen.findByText(seededPerk.title);
 
     // The summary text should continue to reflect the number of matching perks.
     expect(screen.getByText(/showing/i)).toHaveTextContent('Showing');
@@ -51,7 +48,27 @@ describe('AllPerks page (Directory)', () => {
   */
 
   test('lists public perks and responds to merchant filtering', async () => {
-    // This will always fail until the TODO above is implemented.
-    expect(true).toBe(false);
+    const seededPerk = global.__TEST_CONTEXT__.seededPerk;
+
+    renderWithRouter(
+      <Routes>
+        <Route path="/explore" element={<AllPerks />} />
+      </Routes>,
+      { initialEntries: ['/explore'] }
+    );
+
+    // Wait for baseline card to ensure fetch completed
+    await screen.findByText(seededPerk.title);
+
+    // Merchant dropdown should contain the seeded merchant; find the select by role
+    const merchantSelect = screen.getByRole('combobox');
+    // Choose the seeded merchant value
+    fireEvent.change(merchantSelect, { target: { value: seededPerk.merchant } });
+
+    // Wait for the filtered result to appear
+    await screen.findByText(seededPerk.title);
+
+    // Verify the summary reflects matching perks
+    expect(screen.getByText(/showing/i)).toHaveTextContent('Showing');
   });
 });
